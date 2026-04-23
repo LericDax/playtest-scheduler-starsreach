@@ -160,7 +160,7 @@
       .summary-grid,
       .field-grid,
       .team-grid,
-      .timestamp-grid {
+      .timestamp-list {
         display: grid;
         gap: 0.9rem;
       }
@@ -175,10 +175,6 @@
 
       .team-grid {
         grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
-      }
-
-      .timestamp-grid {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       }
 
       .field-span-2 {
@@ -332,14 +328,54 @@
       }
 
       .timestamp-button {
-        display: grid;
-        gap: 0.55rem;
-        padding: 0.95rem;
-        text-align: left;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 92px;
+        padding: 0.72rem 0.9rem;
+        text-align: center;
       }
 
       .timestamp-label {
         font-weight: 700;
+      }
+
+      .timestamp-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.8rem;
+        align-items: center;
+        padding: 0.95rem 1rem;
+        border: 1px solid rgba(128, 196, 255, 0.16);
+        border-radius: 18px;
+        background: rgba(10, 24, 47, 0.72);
+      }
+
+      .timestamp-content {
+        display: grid;
+        gap: 0.55rem;
+        min-width: 0;
+      }
+
+      .timestamp-preview-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+      }
+
+      .timestamp-code {
+        display: inline-block;
+        padding: 0.35rem 0.55rem;
+        border-radius: 10px;
+        color: var(--accent);
+        background: rgba(7, 14, 27, 0.92);
+      }
+
+      .timestamp-preview {
+        font-size: 1.02rem;
+        font-weight: 600;
+        line-height: 1.35;
       }
 
       code,
@@ -436,13 +472,15 @@
       ];
 
       const TIMESTAMP_FORMATS = [
+        { style: "F", label: "Long Date/Time" },
+        { style: "f", label: "Short Date/Time" },
+        { style: "D", label: "Long Date" },
+        { style: "d", label: "Short Date" },
         { style: "t", label: "Short Time" },
         { style: "T", label: "Long Time" },
-        { style: "d", label: "Short Date" },
-        { style: "D", label: "Long Date" },
-        { style: "f", label: "Short Date/Time" },
-        { style: "F", label: "Long Date/Time" },
         { style: "R", label: "Relative Time" },
+        { style: "s", label: "Short Date + Time" },
+        { style: "S", label: "Short Date + Long Time" },
       ];
 
       const DEFAULT_VOICE_LINK = "https://discord.com/channels/882005173394890802/1328814503705448500";
@@ -546,6 +584,72 @@
         return `<t:${unixSeconds}:${style}>`;
       }
 
+      function getRelativeTimePreview(date, nowMs) {
+        if (!date) return "";
+
+        const diffSeconds = Math.round((date.getTime() - nowMs) / 1000);
+        if (diffSeconds === 0) {
+          return "0 seconds ago";
+        }
+
+        const units = [
+          { unit: "year", seconds: 365 * 24 * 60 * 60 },
+          { unit: "month", seconds: 30 * 24 * 60 * 60 },
+          { unit: "week", seconds: 7 * 24 * 60 * 60 },
+          { unit: "day", seconds: 24 * 60 * 60 },
+          { unit: "hour", seconds: 60 * 60 },
+          { unit: "minute", seconds: 60 },
+          { unit: "second", seconds: 1 },
+        ];
+
+        const absolute = Math.abs(diffSeconds);
+        const match = units.find((item) => absolute >= item.seconds) || units[units.length - 1];
+        const value = Math.round(diffSeconds / match.seconds);
+
+        return new Intl.RelativeTimeFormat(undefined, {
+          numeric: "always",
+        }).format(value, match.unit);
+      }
+
+      function getTimestampPreview(date, style, nowMs) {
+        if (!date) return "";
+
+        switch (style) {
+          case "t":
+            return new Intl.DateTimeFormat(undefined, { timeStyle: "short" }).format(date);
+          case "T":
+            return new Intl.DateTimeFormat(undefined, { timeStyle: "medium" }).format(date);
+          case "d":
+            return new Intl.DateTimeFormat(undefined, { dateStyle: "short" }).format(date);
+          case "D":
+            return new Intl.DateTimeFormat(undefined, { dateStyle: "long" }).format(date);
+          case "f":
+            return new Intl.DateTimeFormat(undefined, {
+              dateStyle: "long",
+              timeStyle: "short",
+            }).format(date);
+          case "F":
+            return new Intl.DateTimeFormat(undefined, {
+              dateStyle: "full",
+              timeStyle: "short",
+            }).format(date);
+          case "R":
+            return getRelativeTimePreview(date, nowMs);
+          case "s":
+            return new Intl.DateTimeFormat(undefined, {
+              dateStyle: "short",
+              timeStyle: "short",
+            }).format(date);
+          case "S":
+            return new Intl.DateTimeFormat(undefined, {
+              dateStyle: "short",
+              timeStyle: "medium",
+            }).format(date);
+          default:
+            return "";
+        }
+      }
+
       function formatHourCount(hours) {
         if (!Number.isFinite(hours) || hours < 0) return "TBD";
         if (Math.abs(hours - Math.round(hours)) < 0.000001) return String(Math.round(hours));
@@ -628,7 +732,7 @@
         return TEAM_OPTIONS.filter((team) => selectedLetters.includes(team.letter));
       }
 
-      function TimestampPanel({ title, value, onChange, date, unixSeconds, onCopy }) {
+      function TimestampPanel({ title, value, onChange, date, unixSeconds, onCopy, nowMs }) {
         const offsetText = date ? formatUtcOffset(-date.getTimezoneOffset()) : "UTC--:--";
 
         return (
@@ -672,21 +776,33 @@
               </div>
             </div>
 
-            <div className="timestamp-grid" style={{ marginTop: "0.9rem" }}>
+            <div className="timestamp-list" style={{ marginTop: "0.9rem" }}>
               {TIMESTAMP_FORMATS.map((format) => {
                 const token = getDiscordTimestamp(unixSeconds, format.style);
+                const preview = getTimestampPreview(date, format.style, nowMs);
 
                 return (
-                  <button
+                  <div
                     key={format.style}
-                    type="button"
-                    className="timestamp-button"
-                    onClick={() => onCopy(`${title} ${format.label}`, token)}
-                    disabled={!token}
                   >
-                    <span className="timestamp-label">{format.label}</span>
-                    <code>{token || "Set a date first"}</code>
-                  </button>
+                    <div className="timestamp-row">
+                      <div className="timestamp-content">
+                        <span className="timestamp-label">{format.label}</span>
+                        <div className="timestamp-preview-row">
+                          <code className="timestamp-code">{token || "Set a date first"}</code>
+                          <span className="timestamp-preview">{preview || "Preview unavailable"}</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="timestamp-button"
+                        onClick={() => onCopy(`${title} ${format.label}`, token)}
+                        disabled={!token}
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -718,6 +834,7 @@
         const [useCalculatedDuration, setUseCalculatedDuration] = useState(true);
         const [customDuration, setCustomDuration] = useState("");
         const [copyStatus, setCopyStatus] = useState("");
+        const [nowMs, setNowMs] = useState(() => Date.now());
 
         const browserTimeZone = getBrowserTimeZoneInfo();
         const startDate = parseDateTimeLocal(startDateTime);
@@ -842,6 +959,11 @@
           return () => window.clearTimeout(timeoutId);
         }, [copyStatus]);
 
+        useEffect(() => {
+          const intervalId = window.setInterval(() => setNowMs(Date.now()), 1000);
+          return () => window.clearInterval(intervalId);
+        }, []);
+
         return (
           <main className="page-shell">
             <section className="hero">
@@ -927,6 +1049,7 @@
                 date={startDate}
                 unixSeconds={startUnix}
                 onCopy={handleCopy}
+                nowMs={nowMs}
               />
               <TimestampPanel
                 title="End"
@@ -935,6 +1058,7 @@
                 date={endDate}
                 unixSeconds={endUnix}
                 onCopy={handleCopy}
+                nowMs={nowMs}
               />
             </div>
 
