@@ -570,6 +570,32 @@
         return `${count} ${unit}`;
       }
 
+      function normalizeUrlInput(value, fallback = "") {
+        const trimmed = (value || "").trim();
+        if (!trimmed) return fallback;
+
+        const markdownMatch = trimmed.match(/\[[^\]]*\]\(([^)]+)\)/);
+        let normalized = markdownMatch ? markdownMatch[1].trim() : trimmed;
+
+        if (normalized.startsWith("<") && normalized.endsWith(">")) {
+          normalized = normalized.slice(1, -1).trim();
+        }
+
+        while (normalized.startsWith("(") && normalized.endsWith(")") && normalized.length > 2) {
+          normalized = normalized.slice(1, -1).trim();
+        }
+
+        if (normalized.startsWith("(")) {
+          normalized = normalized.slice(1).trim();
+        }
+
+        if (normalized.endsWith(")")) {
+          normalized = normalized.slice(0, -1).trim();
+        }
+
+        return normalized || fallback;
+      }
+
       function fallbackCopy(text) {
         try {
           const textArea = document.createElement("textarea");
@@ -710,8 +736,8 @@
           : null;
 
         const patchNameValue = patchName.trim();
-        const voiceLinkValue = discordChannel.trim() || DEFAULT_VOICE_LINK;
-        const patchLinkValue = patchNotesLink.trim() || PLACEHOLDER_PATCH_LINK;
+        const voiceLinkValue = normalizeUrlInput(discordChannel, DEFAULT_VOICE_LINK);
+        const patchLinkValue = normalizeUrlInput(patchNotesLink, PLACEHOLDER_PATCH_LINK);
         const patchTitleValue = patchNotesTitle.trim() || patchNameValue || PLACEHOLDER_PATCH_TITLE;
         const durationTextForAnnouncement = useCalculatedDuration
           ? buildAnnouncementDuration(rawDurationHours)
