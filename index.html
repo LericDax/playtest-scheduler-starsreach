@@ -143,6 +143,27 @@
         font-size: 1rem;
       }
 
+      .timesource-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .timesource-toggle input {
+        width: 1.05rem;
+        height: 1.05rem;
+        min-height: 0;
+        margin: 0;
+        accent-color: var(--accent);
+      }
+
+      .timesource-toggle span {
+        color: var(--text);
+        line-height: 1.35;
+      }
+
       .timezone-banner span {
         color: var(--muted);
         line-height: 1.45;
@@ -605,6 +626,7 @@
       const DEFAULT_VOICE_LINK = "https://discord.com/channels/882005173394890802/1328814503705448500";
       const PLACEHOLDER_PATCH_LINK = "PATCH_NOTES_URL";
       const PLACEHOLDER_PATCH_TITLE = "Patch Notes";
+      const PACIFIC_TIME_ZONE = "America/Los_Angeles";
 
       function getIndefiniteArticle(text) {
         if (!text || !text.trim()) return "A";
@@ -659,7 +681,7 @@
         ].join("-") + `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
       }
 
-      function parseDateTimeLocal(value) {
+      function parseDateTimeParts(value) {
         if (!value) return null;
 
         const [datePart, timePart] = value.split("T");
@@ -667,10 +689,103 @@
 
         const [year, month, day] = datePart.split("-").map(Number);
         const [hour, minute] = timePart.split(":").map(Number);
-        const parsed = new Date(year, month - 1, day, hour, minute, 0, 0);
+        const values = [year, month, day, hour, minute];
+        if (values.some((item) => Number.isNaN(item))) return null;
+
+        return { year, month, day, hour, minute };
+      }
+
+      function createLocalDateFromParts(parts) {
+        if (!parts) return null;
+        const parsed = new Date(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, 0, 0);
 
         if (Number.isNaN(parsed.getTime())) return null;
         return parsed;
+      }
+
+      function getFormatterPartMap(parts) {
+        return parts.reduce((map, part) => {
+          if (part.type !== "literal") {
+            map[part.type] = part.value;
+          }
+
+          return map;
+        }, {});
+      }
+
+      function getTimeZoneDateParts(date, timeZone) {
+        const formatter = new Intl.DateTimeFormat("en-US", {
+          timeZone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hourCycle: "h23",
+        });
+        const parts = getFormatterPartMap(formatter.formatToParts(date));
+
+        return {
+          year: Number(parts.year),
+          month: Number(parts.month),
+          day: Number(parts.day),
+          hour: Number(parts.hour),
+          minute: Number(parts.minute),
+          second: Number(parts.second),
+        };
+      }
+
+      function getTimeZoneOffsetMinutes(date, timeZone) {
+        if (!date) return null;
+        if (!timeZone) return -date.getTimezoneOffset();
+
+        const parts = getTimeZoneDateParts(date, timeZone);
+        const utcFromParts = Date.UTC(
+          parts.year,
+          parts.month - 1,
+          parts.day,
+          parts.hour,
+          parts.minute,
+          parts.second,
+          0
+        );
+
+        return Math.round((utcFromParts - date.getTime()) / 60000);
+      }
+
+      function createDateInTimeZone(parts, timeZone) {
+        if (!parts) return null;
+
+        const utcBase = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, 0, 0);
+        let candidate = new Date(utcBase);
+
+        for (let index = 0; index < 4; index += 1) {
+          const offsetMinutes = getTimeZoneOffsetMinutes(candidate, timeZone);
+          const adjustedTime = utcBase - offsetMinutes * 60 * 1000;
+
+          if (adjustedTime === candidate.getTime()) {
+            break;
+          }
+
+          candidate = new Date(adjustedTime);
+        }
+
+        return Number.isNaN(candidate.getTime()) ? null : candidate;
+      }
+
+      function getWallClockDateInTimeZone(date, timeZone) {
+        if (!timeZone) return new Date(date);
+
+        const parts = getTimeZoneDateParts(date, timeZone);
+        return new Date(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second, 0);
+      }
+
+      function parseDateTimeValue(value, timeZone) {
+        const parts = parseDateTimeParts(value);
+        if (!parts) return null;
+
+        return timeZone ? createDateInTimeZone(parts, timeZone) : createLocalDateFromParts(parts);
       }
 
       function formatUtcOffset(totalMinutes) {
@@ -681,26 +796,26 @@
         return `UTC${sign}${hours}:${minutes}`;
       }
 
-      function getBrowserTimeZoneInfo() {
+      function getTimeZoneInfo(timeZone, label) {
         const now = new Date();
-        const januaryOffset = -new Date(now.getFullYear(), 0, 1).getTimezoneOffset();
-        const julyOffset = -new Date(now.getFullYear(), 6, 1).getTimezoneOffset();
-        const currentOffset = -now.getTimezoneOffset();
+        const januaryOffset = getTimeZoneOffsetMinutes(new Date(now.getFullYear(), 0, 1), timeZone);
+        const julyOffset = getTimeZoneOffsetMinutes(new Date(now.getFullYear(), 6, 1), timeZone);
+        const currentOffset = getTimeZoneOffsetMinutes(now, timeZone);
         const observesDST = januaryOffset !== julyOffset;
         const isDSTNow = observesDST && currentOffset === Math.max(januaryOffset, julyOffset);
 
         return {
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Local browser time",
+          timeZone: label || timeZone || "Local browser time",
           currentOffset,
           observesDST,
           isDSTNow,
         };
       }
 
-      function formatLocalPreview(date) {
+      function formatDatePreview(date, timeZone) {
         if (!date) return "Choose a date and time";
 
-        return new Intl.DateTimeFormat(undefined, {
+        const options = {
           weekday: "short",
           month: "short",
           day: "numeric",
@@ -708,7 +823,13 @@
           hour: "numeric",
           minute: "2-digit",
           timeZoneName: "short",
-        }).format(date);
+        };
+
+        if (timeZone) {
+          options.timeZone = timeZone;
+        }
+
+        return new Intl.DateTimeFormat(undefined, options).format(date);
       }
 
       function getUnixSeconds(date) {
@@ -748,43 +869,59 @@
         }).format(value, match.unit);
       }
 
-      function getTimestampPreview(date, style, nowMs) {
+      function getTimestampPreview(date, style, nowMs, timeZone) {
         if (!date) return "";
+
+        const formatOptions = (options) => new Intl.DateTimeFormat(
+          undefined,
+          timeZone ? { ...options, timeZone } : options
+        ).format(date);
 
         switch (style) {
           case "t":
-            return new Intl.DateTimeFormat(undefined, { timeStyle: "short" }).format(date);
+            return formatOptions({ timeStyle: "short" });
           case "T":
-            return new Intl.DateTimeFormat(undefined, { timeStyle: "medium" }).format(date);
+            return formatOptions({ timeStyle: "medium" });
           case "d":
-            return new Intl.DateTimeFormat(undefined, { dateStyle: "short" }).format(date);
+            return formatOptions({ dateStyle: "short" });
           case "D":
-            return new Intl.DateTimeFormat(undefined, { dateStyle: "long" }).format(date);
+            return formatOptions({ dateStyle: "long" });
           case "f":
-            return new Intl.DateTimeFormat(undefined, {
+            return formatOptions({
               dateStyle: "long",
               timeStyle: "short",
-            }).format(date);
+            });
           case "F":
-            return new Intl.DateTimeFormat(undefined, {
+            return formatOptions({
               dateStyle: "full",
               timeStyle: "short",
-            }).format(date);
+            });
           case "R":
             return getRelativeTimePreview(date, nowMs);
           case "s":
-            return new Intl.DateTimeFormat(undefined, {
+            return formatOptions({
               dateStyle: "short",
               timeStyle: "short",
-            }).format(date);
+            });
           case "S":
-            return new Intl.DateTimeFormat(undefined, {
+            return formatOptions({
               dateStyle: "short",
               timeStyle: "medium",
-            }).format(date);
+            });
           default:
             return "";
         }
+      }
+
+      function getDefaultScheduleWindow(timeZone) {
+        const wallClockNow = timeZone ? getWallClockDateInTimeZone(new Date(), timeZone) : new Date();
+        const start = roundToNextHalfHour(wallClockNow);
+        const end = addHours(start, 2);
+
+        return {
+          start: formatDateTimeLocal(start),
+          end: formatDateTimeLocal(end),
+        };
       }
 
       function formatHourCount(hours) {
@@ -869,8 +1006,19 @@
         return TEAM_OPTIONS.filter((team) => selectedLetters.includes(team.letter));
       }
 
-      function TimestampPanel({ title, value, onChange, date, unixSeconds, onCopy, nowMs }) {
-        const offsetText = date ? formatUtcOffset(-date.getTimezoneOffset()) : "UTC--:--";
+      function TimestampPanel({
+        title,
+        value,
+        onChange,
+        date,
+        unixSeconds,
+        onCopy,
+        nowMs,
+        sourceTimeZone,
+        previewLabel,
+      }) {
+        const offsetMinutes = date ? getTimeZoneOffsetMinutes(date, sourceTimeZone) : null;
+        const offsetText = offsetMinutes === null ? "UTC--:--" : formatUtcOffset(offsetMinutes);
 
         return (
           <section className="card">
@@ -903,8 +1051,8 @@
 
             <div className="summary-grid" style={{ marginTop: "0.9rem" }}>
               <div className="stat">
-                <span>Local Preview</span>
-                <strong>{formatLocalPreview(date)}</strong>
+                <span>{previewLabel}</span>
+                <strong>{formatDatePreview(date, sourceTimeZone)}</strong>
               </div>
               <div className="stat">
                 <span>Unix Timestamp</span>
@@ -916,7 +1064,7 @@
             <div className="timestamp-list" style={{ marginTop: "0.9rem" }}>
               {TIMESTAMP_FORMATS.map((format) => {
                 const token = getDiscordTimestamp(unixSeconds, format.style);
-                const preview = getTimestampPreview(date, format.style, nowMs);
+                const preview = getTimestampPreview(date, format.style, nowMs, sourceTimeZone);
 
                 return (
                   <div
@@ -948,16 +1096,17 @@
       }
 
       function PlaytestScheduler() {
-        const initialStart = roundToNextHalfHour(new Date());
-        const initialEnd = addHours(initialStart, 2);
+        const browserTimeZoneName = Intl.DateTimeFormat().resolvedOptions().timeZone || "Local browser time";
+        const initialWindow = getDefaultScheduleWindow(null);
 
         const [selectedLetters, setSelectedLetters] = useState(
           TEAM_OPTIONS.map((team) => team.letter)
         );
+        const [usePacificTimeOverride, setUsePacificTimeOverride] = useState(false);
         const [patchName, setPatchName] = useState("Open Horizon Update");
         const [testType, setTestType] = useState("");
-        const [startDateTime, setStartDateTime] = useState(formatDateTimeLocal(initialStart));
-        const [endDateTime, setEndDateTime] = useState(formatDateTimeLocal(initialEnd));
+        const [startDateTime, setStartDateTime] = useState(initialWindow.start);
+        const [endDateTime, setEndDateTime] = useState(initialWindow.end);
         const [discordChannel, setDiscordChannel] = useState(DEFAULT_VOICE_LINK);
         const [patchNotesTitle, setPatchNotesTitle] = useState("");
         const [patchNotesLink, setPatchNotesLink] = useState("");
@@ -973,9 +1122,21 @@
         const [copyStatus, setCopyStatus] = useState("");
         const [nowMs, setNowMs] = useState(() => Date.now());
 
-        const browserTimeZone = getBrowserTimeZoneInfo();
-        const startDate = parseDateTimeLocal(startDateTime);
-        const endDate = parseDateTimeLocal(endDateTime);
+        const browserTimeZone = getTimeZoneInfo(null, browserTimeZoneName);
+        const activeSourceTimeZone = usePacificTimeOverride ? PACIFIC_TIME_ZONE : null;
+        const activeTimeZoneInfo = usePacificTimeOverride
+          ? getTimeZoneInfo(PACIFIC_TIME_ZONE, "Pacific Time (America/Los_Angeles)")
+          : browserTimeZone;
+        const activeSourceName = usePacificTimeOverride
+          ? "Pacific Time (America/Los_Angeles)"
+          : browserTimeZone.timeZone;
+        const previewLabel = usePacificTimeOverride ? "Pacific Preview" : "Local Preview";
+        const scheduleTitle = usePacificTimeOverride ? "Pacific office date range" : "Browser-local date range";
+        const scheduleCopy = usePacificTimeOverride
+          ? "The schedule is currently interpreted in Pacific Time for the Playable Worlds office. Discord still receives Unix timestamps, so every user sees the right time."
+          : "The schedule now comes from local date pickers instead of manual UTC offset math. Discord still receives Unix timestamps, so every user sees the right time.";
+        const startDate = parseDateTimeValue(startDateTime, activeSourceTimeZone);
+        const endDate = parseDateTimeValue(endDateTime, activeSourceTimeZone);
         const startUnix = getUnixSeconds(startDate);
         const endUnix = getUnixSeconds(endDate);
         const selectedTeams = getOrderedTeams(selectedLetters);
@@ -1068,9 +1229,9 @@
           : "";
 
         const resetSchedule = () => {
-          const resetStart = roundToNextHalfHour(new Date());
-          setStartDateTime(formatDateTimeLocal(resetStart));
-          setEndDateTime(formatDateTimeLocal(addHours(resetStart, 2)));
+          const resetWindow = getDefaultScheduleWindow(activeSourceTimeZone);
+          setStartDateTime(resetWindow.start);
+          setEndDateTime(resetWindow.end);
         };
 
         const toggleLetter = (letter) => {
@@ -1113,17 +1274,27 @@
               </p>
 
               <div className="timezone-banner">
-                <strong>{browserTimeZone.timeZone}</strong>
+                <label className="timesource-toggle">
+                  <input
+                    type="checkbox"
+                    checked={usePacificTimeOverride}
+                    onChange={(event) => setUsePacificTimeOverride(event.target.checked)}
+                  />
+                  <span>Override Timesource as Pacific Time</span>
+                </label>
+                <strong>{activeSourceName}</strong>
+                <span>Browser timezone: {browserTimeZone.timeZone}</span>
                 <span>
-                  {formatUtcOffset(browserTimeZone.currentOffset)} - {browserTimeZone.isDSTNow
+                  {formatUtcOffset(activeTimeZoneInfo.currentOffset)} - {activeTimeZoneInfo.isDSTNow
                     ? "DST is active right now"
-                    : browserTimeZone.observesDST
+                    : activeTimeZoneInfo.observesDST
                       ? "standard time right now"
                       : "this timezone does not observe DST"}
                 </span>
                 <span>
-                  Start and end inputs use this browser timezone automatically, including
-                  daylight saving changes on the selected dates.
+                  Start and end inputs are currently interpreted in {usePacificTimeOverride
+                    ? "Pacific Time for Playable Worlds"
+                    : "your browser timezone"}, including daylight saving changes on the selected dates.
                 </span>
               </div>
             </section>
@@ -1134,11 +1305,8 @@
               <div className="card-header">
                 <div>
                   <p className="eyebrow">Schedule</p>
-                  <h2 className="card-title">Browser-local date range</h2>
-                  <p className="section-copy">
-                    The schedule now comes from local date pickers instead of manual UTC offset
-                    math. Discord still receives Unix timestamps, so every user sees the right time.
-                  </p>
+                  <h2 className="card-title">{scheduleTitle}</h2>
+                  <p className="section-copy">{scheduleCopy}</p>
                 </div>
                 <button type="button" className="ghost-btn" onClick={resetSchedule}>
                   Reset Window
@@ -1148,14 +1316,14 @@
               <div className="summary-grid">
                 <div className="stat">
                   <span>Start Preview</span>
-                  <strong>{formatLocalPreview(startDate)}</strong>
+                  <strong>{formatDatePreview(startDate, activeSourceTimeZone)}</strong>
                   <small className="mono">
                     {startUnix === null ? "No start timestamp yet" : getDiscordTimestamp(startUnix, "F")}
                   </small>
                 </div>
                 <div className="stat">
                   <span>End Preview</span>
-                  <strong>{formatLocalPreview(endDate)}</strong>
+                  <strong>{formatDatePreview(endDate, activeSourceTimeZone)}</strong>
                   <small className="mono">
                     {endUnix === null ? "No end timestamp yet" : getDiscordTimestamp(endUnix, "F")}
                   </small>
@@ -1188,6 +1356,8 @@
                 unixSeconds={startUnix}
                 onCopy={handleCopy}
                 nowMs={nowMs}
+                sourceTimeZone={activeSourceTimeZone}
+                previewLabel={previewLabel}
               />
               <TimestampPanel
                 title="End"
@@ -1197,6 +1367,8 @@
                 unixSeconds={endUnix}
                 onCopy={handleCopy}
                 nowMs={nowMs}
+                sourceTimeZone={activeSourceTimeZone}
+                previewLabel={previewLabel}
               />
             </div>
 
