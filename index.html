@@ -41,12 +41,34 @@
       }
 
       body {
+        position: relative;
+        overflow-x: hidden;
         font-family: "Chakra Petch", sans-serif;
         color: var(--text);
+        background: linear-gradient(180deg, #08111f 0%, #0a1830 100%);
+      }
+
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      body::before {
+        z-index: -2;
         background:
-          radial-gradient(circle at top left, rgba(99, 225, 255, 0.16), transparent 36%),
-          radial-gradient(circle at top right, rgba(255, 191, 105, 0.16), transparent 28%),
-          linear-gradient(180deg, #08111f 0%, #0a1830 100%);
+          linear-gradient(180deg, rgba(3, 9, 20, 0.54), rgba(5, 13, 29, 0.72)),
+          url("./assets/victorian-celestial-wallpaper.webp") center top / cover no-repeat;
+      }
+
+      body::after {
+        z-index: -1;
+        background:
+          radial-gradient(circle at top left, rgba(99, 225, 255, 0.14), transparent 34%),
+          radial-gradient(circle at top right, rgba(255, 191, 105, 0.14), transparent 26%),
+          linear-gradient(180deg, rgba(6, 16, 31, 0.2), rgba(6, 16, 31, 0.42));
       }
 
       button,
@@ -60,6 +82,8 @@
       }
 
       .page-shell {
+        position: relative;
+        z-index: 1;
         width: min(1280px, calc(100% - 2rem));
         margin: 0 auto;
         padding: 2rem 0 3rem;
