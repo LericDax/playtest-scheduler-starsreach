@@ -43,6 +43,7 @@
       body {
         margin: 0;
         min-height: 100%;
+        -webkit-text-size-adjust: 100%;
       }
 
       body {
@@ -85,6 +86,7 @@
 
       button {
         cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
       }
 
       .page-shell {
@@ -123,6 +125,7 @@
         color: var(--muted);
         font-size: 1.08rem;
         line-height: 1.5;
+        text-wrap: balance;
       }
 
       .timezone-banner {
@@ -255,11 +258,13 @@
       input,
       textarea {
         width: 100%;
+        min-height: 3rem;
         padding: 0.82rem 0.9rem;
         border: 1px solid rgba(214, 150, 101, 0.16);
         border-radius: 16px;
         color: var(--text);
         background: rgba(10, 10, 24, 0.86);
+        font-size: 16px;
         outline: none;
         transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
       }
@@ -311,6 +316,7 @@
       .ghost-btn,
       .toggle-chip {
         padding: 0.78rem 1rem;
+        min-height: 3rem;
       }
 
       .primary-btn {
@@ -371,6 +377,7 @@
         align-items: center;
         justify-content: center;
         min-width: 92px;
+        min-height: 3rem;
         padding: 0.72rem 0.9rem;
         text-align: center;
       }
@@ -400,7 +407,7 @@
         display: flex;
         flex-wrap: wrap;
         gap: 0.75rem;
-        align-items: center;
+        align-items: flex-start;
       }
 
       .timestamp-code {
@@ -464,7 +471,7 @@
 
       @media (max-width: 720px) {
         .page-shell {
-          width: min(100% - 1rem, 1280px);
+          width: min(1280px, calc(100% - 1rem));
           padding-top: 1.2rem;
         }
 
@@ -478,6 +485,79 @@
 
         .card-header {
           flex-direction: column;
+        }
+      }
+
+      @media (max-width: 540px) {
+        .page-shell {
+          width: calc(100% - 0.75rem);
+          padding-top: 0.9rem;
+          padding-bottom: calc(2.4rem + env(safe-area-inset-bottom, 0px));
+        }
+
+        .hero {
+          margin-bottom: 1.1rem;
+        }
+
+        .hero-title {
+          font-size: clamp(2.1rem, 11vw, 3rem);
+          line-height: 0.92;
+        }
+
+        .hero-copy,
+        .section-copy,
+        .meta-copy,
+        .timezone-banner span,
+        .helper-text,
+        .stat small {
+          font-size: 0.96rem;
+        }
+
+        .timezone-banner,
+        .card,
+        .timestamp-row,
+        .stat {
+          border-radius: 20px;
+        }
+
+        .button-row,
+        .status-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .button-row > *,
+        .status-row > *,
+        .card-header > .primary-btn,
+        .card-header > .ghost-btn {
+          width: 100%;
+        }
+
+        .timestamp-row {
+          grid-template-columns: 1fr;
+        }
+
+        .timestamp-preview-row {
+          display: grid;
+          gap: 0.55rem;
+        }
+
+        .timestamp-button {
+          width: 100%;
+          min-width: 0;
+        }
+
+        .timestamp-code {
+          max-width: 100%;
+        }
+
+        textarea {
+          min-height: 18rem;
+          font-size: 1rem;
+        }
+
+        .compact-output {
+          min-height: 10rem;
         }
       }
     </style>
