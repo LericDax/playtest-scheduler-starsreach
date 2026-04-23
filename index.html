@@ -2,58 +2,408 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Playtest Scheduler for Stars Reach</title>
-    <!-- React (Production UMD) -->
     <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
-    <!-- ReactDOM (Production UMD) -->
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
-    <!-- Babel Standalone for in-browser JSX compilation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <style>
+      :root {
+        --bg: #07111f;
+        --bg-alt: #0a1a2f;
+        --panel: rgba(13, 27, 48, 0.9);
+        --panel-strong: rgba(18, 38, 66, 0.96);
+        --border: rgba(128, 196, 255, 0.22);
+        --text: #edf5ff;
+        --muted: #9cb6cf;
+        --accent: #63e1ff;
+        --accent-strong: #12b5d9;
+        --accent-soft: rgba(99, 225, 255, 0.16);
+        --warning: #ffbf69;
+        --shadow: 0 22px 52px rgba(0, 0, 0, 0.34);
+        --radius: 22px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
       body {
-        font-family: sans-serif;
-        margin: 1rem;
+        margin: 0;
+        min-height: 100%;
       }
-      .container {
-        max-width: 700px;
-        margin: 0 auto;
-        padding: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 6px;
+
+      body {
+        font-family: "Chakra Petch", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(99, 225, 255, 0.16), transparent 36%),
+          radial-gradient(circle at top right, rgba(255, 191, 105, 0.16), transparent 28%),
+          linear-gradient(180deg, #08111f 0%, #0a1830 100%);
       }
-      .grid-5 {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 0.5rem;
+
+      button,
+      input,
+      textarea {
+        font: inherit;
       }
-      .grid-3 {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.5rem;
-      }
-      .btn {
-        background: #e0e0e0;
-        border: 1px solid #aaa;
-        padding: 0.3rem 0.6rem;
-        margin-top: 0.2rem;
+
+      button {
         cursor: pointer;
       }
-      .btn.selected {
-        background-color: #2979ff;
-        color: #fff;
+
+      .page-shell {
+        width: min(1280px, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 2rem 0 3rem;
       }
-      .field-label {
-        display: block;
-        margin-top: 1rem;
-        font-weight: bold;
+
+      .hero {
+        margin-bottom: 1.5rem;
       }
+
+      .eyebrow {
+        margin: 0 0 0.5rem;
+        color: var(--accent);
+        font-size: 0.9rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .hero-title {
+        margin: 0;
+        font-size: clamp(2.4rem, 6vw, 4.6rem);
+        line-height: 0.95;
+      }
+
+      .hero-copy {
+        max-width: 760px;
+        margin: 1rem 0 0;
+        color: var(--muted);
+        font-size: 1.08rem;
+        line-height: 1.5;
+      }
+
+      .timezone-banner {
+        display: grid;
+        gap: 0.35rem;
+        margin-top: 1.25rem;
+        padding: 1rem 1.1rem;
+        border: 1px solid rgba(99, 225, 255, 0.22);
+        border-radius: 18px;
+        background: rgba(10, 24, 47, 0.72);
+        box-shadow: var(--shadow);
+      }
+
+      .timezone-banner strong {
+        font-size: 1rem;
+      }
+
+      .timezone-banner span {
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .layout {
+        display: grid;
+        gap: 1.25rem;
+      }
+
+      .layout.two-col {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .card {
+        padding: 1.35rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(14px);
+      }
+
+      .card + .card,
+      .layout + .card,
+      .card + .layout,
+      .layout + .layout {
+        margin-top: 1.25rem;
+      }
+
+      .card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .card-title {
+        margin: 0.15rem 0 0;
+        font-size: 1.45rem;
+        line-height: 1.05;
+      }
+
+      .section-copy {
+        margin: 0.4rem 0 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .summary-grid,
+      .field-grid,
+      .team-grid,
+      .timestamp-grid {
+        display: grid;
+        gap: 0.9rem;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      .field-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      .team-grid {
+        grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+      }
+
+      .timestamp-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
+
+      .field-span-2 {
+        grid-column: span 2;
+      }
+
+      .stat {
+        display: grid;
+        gap: 0.35rem;
+        padding: 0.95rem 1rem;
+        border: 1px solid rgba(128, 196, 255, 0.14);
+        border-radius: 18px;
+        background: var(--panel-strong);
+      }
+
+      .stat span {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .stat strong {
+        font-size: 1rem;
+        line-height: 1.4;
+      }
+
+      .stat small,
+      .helper-text {
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .field {
+        display: grid;
+        gap: 0.45rem;
+      }
+
+      .field label {
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+
+      input,
       textarea {
         width: 100%;
-        height: 120px;
-        margin-top: 0.5rem;
+        padding: 0.82rem 0.9rem;
+        border: 1px solid rgba(128, 196, 255, 0.18);
+        border-radius: 16px;
+        color: var(--text);
+        background: rgba(7, 14, 27, 0.86);
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
       }
-      .dst-toggle {
-        margin-top: 0.5rem;
+
+      input:focus,
+      textarea:focus {
+        border-color: rgba(99, 225, 255, 0.72);
+        box-shadow: 0 0 0 3px rgba(99, 225, 255, 0.16);
+      }
+
+      input:disabled {
+        opacity: 0.58;
+        cursor: not-allowed;
+      }
+
+      textarea {
+        min-height: 24rem;
+        resize: vertical;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.94rem;
+        line-height: 1.5;
+      }
+
+      .compact-output {
+        min-height: 12rem;
+      }
+
+      .button-row,
+      .status-row,
+      .toggle-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.7rem;
+      }
+
+      .primary-btn,
+      .ghost-btn,
+      .team-chip,
+      .toggle-chip,
+      .timestamp-button {
+        border: 1px solid transparent;
+        border-radius: 16px;
+        transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+      }
+
+      .primary-btn,
+      .ghost-btn,
+      .toggle-chip {
+        padding: 0.78rem 1rem;
+      }
+
+      .primary-btn {
+        color: #03111d;
+        background: linear-gradient(135deg, var(--accent) 0%, #9df0ff 100%);
+        font-weight: 700;
+      }
+
+      .ghost-btn,
+      .toggle-chip,
+      .team-chip,
+      .timestamp-button {
+        color: var(--text);
+        background: rgba(10, 24, 47, 0.72);
+        border-color: rgba(128, 196, 255, 0.16);
+      }
+
+      .primary-btn:hover,
+      .ghost-btn:hover,
+      .team-chip:hover,
+      .toggle-chip:hover,
+      .timestamp-button:hover {
+        transform: translateY(-1px);
+        border-color: rgba(99, 225, 255, 0.45);
+      }
+
+      .ghost-btn:disabled,
+      .timestamp-button:disabled {
+        opacity: 0.48;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .toggle-chip.active,
+      .team-chip.selected {
+        border-color: rgba(99, 225, 255, 0.6);
+        background: linear-gradient(135deg, rgba(99, 225, 255, 0.24), rgba(18, 181, 217, 0.18));
+      }
+
+      .team-chip {
+        width: 100%;
+        padding: 0.86rem 0.9rem;
+        text-align: left;
+      }
+
+      .status-pill {
+        padding: 0.45rem 0.72rem;
+        border: 1px solid rgba(128, 196, 255, 0.16);
+        border-radius: 999px;
+        color: var(--muted);
+        background: rgba(10, 24, 47, 0.56);
+        font-size: 0.92rem;
+      }
+
+      .timestamp-button {
+        display: grid;
+        gap: 0.55rem;
+        padding: 0.95rem;
+        text-align: left;
+      }
+
+      .timestamp-label {
+        font-weight: 700;
+      }
+
+      code,
+      .mono {
+        font-family: "IBM Plex Mono", monospace;
+        word-break: break-word;
+      }
+
+      .timestamp-button code {
+        color: var(--accent);
+      }
+
+      .error-banner {
+        margin-top: 1rem;
+        padding: 0.85rem 1rem;
+        border: 1px solid rgba(255, 191, 105, 0.28);
+        border-radius: 16px;
+        background: rgba(255, 191, 105, 0.1);
+        color: #ffe4b8;
+      }
+
+      .toast {
+        position: sticky;
+        top: 1rem;
+        z-index: 20;
+        width: fit-content;
+        margin-left: auto;
+        margin-bottom: 1rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid rgba(99, 225, 255, 0.28);
+        border-radius: 14px;
+        background: rgba(9, 22, 41, 0.94);
+        color: var(--text);
+        box-shadow: var(--shadow);
+      }
+
+      .meta-copy {
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      @media (max-width: 980px) {
+        .layout.two-col {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .page-shell {
+          width: min(100% - 1rem, 1280px);
+          padding-top: 1.2rem;
+        }
+
+        .card {
+          padding: 1rem;
+        }
+
+        .field-span-2 {
+          grid-column: span 1;
+        }
+
+        .card-header {
+          flex-direction: column;
+        }
       }
     </style>
   </head>
@@ -61,375 +411,783 @@
     <div id="root"></div>
 
     <script type="text/babel">
-      const { useState } = React;
+      const { useEffect, useState } = React;
 
-      // A simplified list of integer UTC offsets from UTC−12 to UTC+14,
-      // each with a rough "primary name" in English.
-      const timeZoneOptions = [
-        { offset: -12, label: "UTC−12: International Date Line West" },
-        { offset: -11, label: "UTC−11: Samoa, Midway Atoll" },
-        { offset: -10, label: "UTC−10: Hawaii Standard Time (HST)" },
-        { offset: -9,  label: "UTC−9: Alaska Standard Time (AKST)" },
-        { offset: -8,  label: "UTC−8: Pacific Standard Time (PST)" },
-        { offset: -7,  label: "UTC−7: Mountain Standard Time (MST)" },
-        { offset: -6,  label: "UTC−6: Central Standard Time (CST)" },
-        { offset: -5,  label: "UTC−5: Eastern Standard Time (EST)" },
-        { offset: -4,  label: "UTC−4: Atlantic Standard Time (AST)" },
-        { offset: -3,  label: "UTC−3: Argentina, Brazil (East)" },
-        { offset: -2,  label: "UTC−2: South Georgia & Sandwich Is." },
-        { offset: -1,  label: "UTC−1: Azores" },
-        { offset: 0,   label: "UTC±0: Greenwich Mean Time (GMT)" },
-        { offset: 1,   label: "UTC+1: Central European Time (CET)" },
-        { offset: 2,   label: "UTC+2: Eastern European Time (EET)" },
-        { offset: 3,   label: "UTC+3: Moscow Time" },
-        { offset: 4,   label: "UTC+4: Gulf Standard Time (GST)" },
-        { offset: 5,   label: "UTC+5: Pakistan Standard Time (PKT)" },
-        { offset: 6,   label: "UTC+6: Bangladesh Standard Time (BST)" },
-        { offset: 7,   label: "UTC+7: Indochina Time (ICT)" },
-        { offset: 8,   label: "UTC+8: China Standard Time (CST)" },
-        { offset: 9,   label: "UTC+9: Japan Standard Time (JST)" },
-        { offset: 10,  label: "UTC+10: Australian Eastern Time (AEST)" },
-        { offset: 11,  label: "UTC+11: Solomon Islands Time (SBT)" },
-        { offset: 12,  label: "UTC+12: New Zealand Standard Time (NZST)" },
-        { offset: 13,  label: "UTC+13: Tonga Time (TOT)" },
-        { offset: 14,  label: "UTC+14: Line Islands (LINT)" },
+      const TEAM_OPTIONS = [
+        { letter: "α", name: "Alpha" },
+        { letter: "β", name: "Beta" },
+        { letter: "γ", name: "Gamma" },
+        { letter: "δ", name: "Delta" },
+        { letter: "ε", name: "Epsilon" },
+        { letter: "ζ", name: "Zeta" },
+        { letter: "η", name: "Eta" },
+        { letter: "θ", name: "Theta" },
+        { letter: "ι", name: "Iota" },
+        { letter: "κ", name: "Kappa" },
+        { letter: "λ", name: "Lambda" },
+        { letter: "μ", name: "Mu" },
+        { letter: "ν", name: "Nu" },
+        { letter: "ξ", name: "Xi" },
+        { letter: "ο", name: "Omicron" },
+        { letter: "π", name: "Pi" },
+        { letter: "ρ", name: "Rho" },
+        { letter: "σ", name: "Sigma" },
+        { letter: "τ", name: "Tau" },
       ];
 
-      // Helper function: if testType starts with vowel, use "An"; else "A".
-      function getIndefiniteArticle(testType) {
-        if (!testType) return "A"; // fallback if empty
-        // Trim, check first character
-        const firstLetter = testType.trim().charAt(0).toLowerCase();
+      const TIMESTAMP_FORMATS = [
+        { style: "t", label: "Short Time" },
+        { style: "T", label: "Long Time" },
+        { style: "d", label: "Short Date" },
+        { style: "D", label: "Long Date" },
+        { style: "f", label: "Short Date/Time" },
+        { style: "F", label: "Long Date/Time" },
+        { style: "R", label: "Relative Time" },
+      ];
+
+      const PLACEHOLDER_VOICE_LINK = "https://discord.com/channels/...";
+      const PLACEHOLDER_PATCH_LINK = "PATCH_NOTES_URL";
+      const PLACEHOLDER_PATCH_TITLE = "Patch Notes";
+
+      function getIndefiniteArticle(text) {
+        if (!text || !text.trim()) return "A";
+        const firstLetter = text.trim().charAt(0).toLowerCase();
         return "aeiou".includes(firstLetter) ? "An" : "A";
       }
 
-      function PlaytestScheduler() {
-        const greekLetters = [
-          { letter: "α", name: "Alpha" }, { letter: "β", name: "Beta" }, { letter: "γ", name: "Gamma" },
-          { letter: "δ", name: "Delta" }, { letter: "ε", name: "Epsilon" }, { letter: "ζ", name: "Zeta" },
-          { letter: "η", name: "Eta" }, { letter: "θ", name: "Theta" }, { letter: "ι", name: "Iota" },
-          { letter: "κ", name: "Kappa" }, { letter: "λ", name: "Lambda" }, { letter: "μ", name: "Mu" },
-          { letter: "ν", name: "Nu" }, { letter: "ξ", name: "Xi" }, { letter: "ο", name: "Omicron" },
-          { letter: "π", name: "Pi" }, { letter: "ρ", name: "Rho" }, { letter: "σ", name: "Sigma" },
-          { letter: "τ", name: "Tau" }, { letter: "υ", name: "Upsilon" }, { letter: "φ", name: "Phi" },
-          { letter: "χ", name: "Chi" }, { letter: "ψ", name: "Psi" }, { letter: "ω", name: "Omega" }
-        ];
+      function roundToNextHalfHour(date) {
+        const rounded = new Date(date);
+        rounded.setSeconds(0, 0);
+        const minutes = rounded.getMinutes();
 
-        // Basic state fields
-        const [selectedLetters, setSelectedLetters] = useState([]);
-        const [testType, setTestType] = useState("Escarion Update");
+        if (minutes === 0 || minutes === 30) {
+          rounded.setMinutes(minutes + 30);
+          return rounded;
+        }
 
-        // Date/time
-        const [month, setMonth] = useState("");
-        const [day, setDay] = useState("");
-        const [year, setYear] = useState("");
-        const [hour, setHour] = useState("");
-        const [minute, setMinute] = useState("");
-        const [isPM, setIsPM] = useState(false);
+        rounded.setMinutes(minutes < 30 ? 30 : 60);
+        return rounded;
+      }
 
-        // Time zone & DST
-        const [selectedZone, setSelectedZone] = useState(timeZoneOptions[0]);
-        const [isDST, setIsDST] = useState(false);
+      function addHours(date, hours) {
+        const copy = new Date(date);
+        copy.setTime(copy.getTime() + hours * 60 * 60 * 1000);
+        return copy;
+      }
 
-        // Other fields
-        const [discordChannel, setDiscordChannel] = useState("");
-        const [patchNotesLink, setPatchNotesLink] = useState("");
-        const [testDuration, setTestDuration] = useState("2-hour");
-        const [isSpecial, setIsSpecial] = useState(false);
+      function formatDateTimeLocal(date) {
+        const pad = (value) => String(value).padStart(2, "0");
+        return [
+          date.getFullYear(),
+          pad(date.getMonth() + 1),
+          pad(date.getDate()),
+        ].join("-") + `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+      }
 
-        // Header toggles
-        const [isAllTeams, setIsAllTeams] = useState(false);
-        const [isPatchDay, setIsPatchDay] = useState(false);
+      function parseDateTimeLocal(value) {
+        if (!value) return null;
 
-        // Toggle selection of teams
-        const toggleLetter = (letter) => {
-          setSelectedLetters((prev) =>
-            prev.includes(letter)
-              ? prev.filter((l) => l !== letter)
-              : [...prev, letter]
-          );
+        const [datePart, timePart] = value.split("T");
+        if (!datePart || !timePart) return null;
+
+        const [year, month, day] = datePart.split("-").map(Number);
+        const [hour, minute] = timePart.split(":").map(Number);
+        const parsed = new Date(year, month - 1, day, hour, minute, 0, 0);
+
+        if (Number.isNaN(parsed.getTime())) return null;
+        return parsed;
+      }
+
+      function formatUtcOffset(totalMinutes) {
+        const sign = totalMinutes >= 0 ? "+" : "-";
+        const absolute = Math.abs(totalMinutes);
+        const hours = String(Math.floor(absolute / 60)).padStart(2, "0");
+        const minutes = String(absolute % 60).padStart(2, "0");
+        return `UTC${sign}${hours}:${minutes}`;
+      }
+
+      function getBrowserTimeZoneInfo() {
+        const now = new Date();
+        const januaryOffset = -new Date(now.getFullYear(), 0, 1).getTimezoneOffset();
+        const julyOffset = -new Date(now.getFullYear(), 6, 1).getTimezoneOffset();
+        const currentOffset = -now.getTimezoneOffset();
+        const observesDST = januaryOffset !== julyOffset;
+        const isDSTNow = observesDST && currentOffset === Math.max(januaryOffset, julyOffset);
+
+        return {
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Local browser time",
+          currentOffset,
+          observesDST,
+          isDSTNow,
         };
+      }
 
-        const toggleAllTeams = () => {
-          setSelectedLetters((prev) =>
-            prev.length === greekLetters.length
-              ? []
-              : greekLetters.map((g) => g.letter)
-          );
-        };
+      function formatLocalPreview(date) {
+        if (!date) return "Choose a date and time";
 
-        // AM/PM toggle
-        const toggleAMPM = () => {
-          setIsPM((prev) => !prev);
-        };
+        return new Intl.DateTimeFormat(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          timeZoneName: "short",
+        }).format(date);
+      }
 
-        // Header toggles
-        const toggleAllTeamsHeader = () => setIsAllTeams((prev) => !prev);
-        const togglePatchDayHeader = () => setIsPatchDay((prev) => !prev);
+      function getUnixSeconds(date) {
+        if (!date || Number.isNaN(date.getTime())) return null;
+        return Math.floor(date.getTime() / 1000);
+      }
 
-        // Generate the heading
-        const generateHeader = () => {
-          let header = "A Playtest is Starting Soon";
-          if (isAllTeams) header = "An All-Teams Playtest is Starting Soon";
-          if (isPatchDay) {
-            header = header.replace("Playtest", "Patch Day Playtest");
-          }
-          return header;
-        };
+      function getDiscordTimestamp(unixSeconds, style) {
+        if (unixSeconds === null) return "";
+        return `<t:${unixSeconds}:${style}>`;
+      }
 
-        // Generate the Unix timestamp from user input
-        const generateTimestamp = () => {
-          if (!month || !day || !year || !hour || !minute) return "";
-          let localHour = Number(hour);
+      function formatHourCount(hours) {
+        if (!Number.isFinite(hours) || hours < 0) return "TBD";
+        if (Math.abs(hours - Math.round(hours)) < 0.000001) return String(Math.round(hours));
+        return String(Number(hours.toFixed(2)));
+      }
 
-          // Convert HH:MM + AM/PM => 24-hour local
-          if (isPM && localHour < 12) localHour += 12;
-          if (!isPM && localHour === 12) localHour = 0;
+      function buildAnnouncementDuration(hours) {
+        const count = formatHourCount(hours);
+        return count === "TBD" ? "TBD duration" : `${count} hour`;
+      }
 
-          // If DST is on, effectively shift offset by +1
-          const effectiveOffset = selectedZone.offset + (isDST ? 1 : 0);
-          // local time in "UTC + offset" => UTC hour = localHour - offset
-          const utcHour = localHour - effectiveOffset;
+      function buildDurationLabel(hours, titleCase = false) {
+        const count = formatHourCount(hours);
+        if (count === "TBD") return "TBD";
 
-          // Build an absolute UTC Date
-          const date = new Date(Date.UTC(year, month - 1, day, utcHour, minute, 0));
-          return Math.floor(date.getTime() / 1000);
-        };
+        const numericCount = Number(count);
+        const singular = numericCount === 1;
+        const unit = singular
+          ? titleCase ? "Hour" : "hour"
+          : titleCase ? "Hours" : "hours";
 
-        // Build the final Discord message
-        const buildMessage = () => {
-          const teams = selectedLetters
-            .map((letter) => {
-              const name = greekLetters.find((g) => g.letter === letter)?.name;
-              return `@Star ${name} [${letter}]`;
-            })
-            .join(" ");
+        return `${count} ${unit}`;
+      }
 
-          const finalHeader = generateHeader();
-          const stamp = generateTimestamp();
+      function fallbackCopy(text) {
+        try {
+          const textArea = document.createElement("textarea");
+          textArea.value = text;
+          document.body.appendChild(textArea);
+          textArea.select();
+          const successful = document.execCommand("copy");
+          document.body.removeChild(textArea);
+          return successful;
+        } catch (error) {
+          console.error("Fallback copy failed.", error);
+          return false;
+        }
+      }
 
-          // Decide whether to use "A" or "An" for the testType
-          const article = getIndefiniteArticle(testType);
-
-          // Return the final text with the correct indefinite article
-          return `## ${finalHeader}
-
-### :SRA: ${article} ${testType} test begins at <t:${stamp}:t> :SRA:
-
-__Open to the following Teams__:
-${teams}
-
-***All are welcome to watch and listen!***
-Join us in [Voice](${discordChannel}) for a${isSpecial ? " special" : ""} ${testDuration} test!
-
-Read the patch notes [here](${patchNotesLink})`;
-        };
-
-        // Copy to clipboard
-        const copyMessageToClipboard = () => {
-          const msg = buildMessage();
-          if (navigator && navigator.clipboard) {
-            navigator.clipboard.writeText(msg).catch((err) => {
-              console.error("Failed via navigator.clipboard, trying fallback:", err);
-              fallbackCopy(msg);
-            });
-          } else {
-            console.warn("Clipboard API not available, using fallback");
-            fallbackCopy(msg);
-          }
-        };
-
-        // Fallback copy
-        const fallbackCopy = (msg) => {
+      async function copyText(text) {
+        if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
           try {
-            const textArea = document.createElement("textarea");
-            textArea.value = msg;
-            document.body.appendChild(textArea);
-            textArea.select();
-            const successful = document.execCommand("copy");
-            document.body.removeChild(textArea);
-            if (!successful) {
-              throw new Error("document.execCommand did not return true");
-            }
-            console.log("Copied via fallback (execCommand)");
-          } catch (err) {
-            console.error("Fallback copy failed", err);
+            await navigator.clipboard.writeText(text);
+            return true;
+          } catch (error) {
+            console.error("navigator.clipboard failed, falling back.", error);
           }
-        };
+        }
+
+        return fallbackCopy(text);
+      }
+
+      function getOrderedTeams(selectedLetters) {
+        return TEAM_OPTIONS.filter((team) => selectedLetters.includes(team.letter));
+      }
+
+      function TimestampPanel({ title, value, onChange, date, unixSeconds, onCopy }) {
+        const offsetText = date ? formatUtcOffset(-date.getTimezoneOffset()) : "UTC--:--";
 
         return (
-          <div className="container">
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
-              Playtest Scheduler for Stars Reach
-            </h2>
-
-            {/* Toggle All-Teams & Patch Day */}
-            <div style={{ marginBottom: '1rem' }}>
-              <button className="btn" onClick={toggleAllTeamsHeader}>
-                {isAllTeams ? "Unset All-Teams" : "Set All-Teams"}
-              </button>
-              <button className="btn" onClick={togglePatchDayHeader} style={{ marginLeft: '1rem' }}>
-                {isPatchDay ? "Unset Patch Day" : "Set Patch Day"}
+          <section className="card">
+            <div className="card-header">
+              <div>
+                <p className="eyebrow">{title}</p>
+                <h2 className="card-title">{title} Timestamp</h2>
+                <p className="section-copy">
+                  Pick a local browser time, then copy the exact Discord tag you need.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="ghost-btn"
+                onClick={() => onCopy(`${title} Unix timestamp`, String(unixSeconds))}
+                disabled={unixSeconds === null}
+              >
+                Copy Unix
               </button>
             </div>
 
-            {/* Test Type */}
-            <label className="field-label">Test Type:</label>
-            <input
-              type="text"
-              value={testType}
-              onChange={(e) => setTestType(e.target.value)}
-            />
+            <div className="field">
+              <label>{title} Date &amp; Time</label>
+              <input
+                type="datetime-local"
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+              />
+            </div>
 
-            {/* Teams */}
-            <label className="field-label">Select Teams:</label>
-            <button className="btn" onClick={toggleAllTeams}>
-              {selectedLetters.length === greekLetters.length
-                ? "Deselect All Teams"
-                : "Select All Teams"}
-            </button>
-            <div className="grid-5" style={{ marginTop: '0.5rem' }}>
-              {greekLetters.map(({ letter, name }) => {
-                const isSelected = selectedLetters.includes(letter);
+            <div className="summary-grid" style={{ marginTop: "0.9rem" }}>
+              <div className="stat">
+                <span>Local Preview</span>
+                <strong>{formatLocalPreview(date)}</strong>
+              </div>
+              <div className="stat">
+                <span>Unix Timestamp</span>
+                <strong className="mono">{unixSeconds === null ? "Unavailable" : unixSeconds}</strong>
+                <small>{date ? `${offsetText} for this date` : "Select a date to generate a timestamp."}</small>
+              </div>
+            </div>
+
+            <div className="timestamp-grid" style={{ marginTop: "0.9rem" }}>
+              {TIMESTAMP_FORMATS.map((format) => {
+                const token = getDiscordTimestamp(unixSeconds, format.style);
+
                 return (
                   <button
-                    key={letter}
-                    className={`btn ${isSelected ? "selected" : ""}`}
-                    onClick={() => toggleLetter(letter)}
+                    key={format.style}
+                    type="button"
+                    className="timestamp-button"
+                    onClick={() => onCopy(`${title} ${format.label}`, token)}
+                    disabled={!token}
                   >
-                    {name} [{letter}]
+                    <span className="timestamp-label">{format.label}</span>
+                    <code>{token || "Set a date first"}</code>
                   </button>
                 );
               })}
             </div>
-
-            {/* Date Fields */}
-            <label className="field-label">Date (MM/DD/YYYY):</label>
-            <div className="grid-3">
-              <input
-                type="text"
-                placeholder="MM"
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="DD"
-                value={day}
-                onChange={(e) => setDay(e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="YYYY"
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-              />
-            </div>
-
-            {/* Time Fields */}
-            <label className="field-label">Time (HH:MM):</label>
-            <div className="grid-3">
-              <input
-                type="text"
-                placeholder="HH"
-                value={hour}
-                onChange={(e) => setHour(e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="MM"
-                value={minute}
-                onChange={(e) => setMinute(e.target.value)}
-              />
-              <button className="btn" onClick={toggleAMPM}>
-                {isPM ? "PM" : "AM"}
-              </button>
-            </div>
-
-            {/* Time Zone Selection */}
-            <label className="field-label">Select Your Time Zone:</label>
-            <select
-              value={selectedZone.offset}
-              onChange={(e) => {
-                const offsetNum = Number(e.target.value);
-                const chosenZone = timeZoneOptions.find(z => z.offset === offsetNum);
-                setSelectedZone(chosenZone);
-              }}
-              style={{ marginTop: '0.2rem' }}
-            >
-              {timeZoneOptions.map(zone => (
-                <option key={zone.offset} value={zone.offset}>
-                  {zone.label}
-                </option>
-              ))}
-            </select>
-
-            {/* DST Toggle */}
-            <div className="dst-toggle">
-              <button
-                className={`btn ${isDST ? "selected" : ""}`}
-                onClick={() => setIsDST(!isDST)}
-              >
-                {isDST ? "Turn DST Off" : "Currently Observing DST?"}
-              </button>
-            </div>
-
-            {/* Discord, Patch Notes, Duration */}
-            <label className="field-label">Discord Voice Channel Link:</label>
-            <input
-              type="text"
-              value={discordChannel}
-              onChange={(e) => setDiscordChannel(e.target.value)}
-            />
-
-            <label className="field-label">Patch Notes Link:</label>
-            <input
-              type="text"
-              value={patchNotesLink}
-              onChange={(e) => setPatchNotesLink(e.target.value)}
-            />
-
-            <label className="field-label">Test Duration:</label>
-            <input
-              type="text"
-              value={testDuration}
-              onChange={(e) => setTestDuration(e.target.value)}
-            />
-
-            {/* Special Test Toggle */}
-            <div style={{ marginTop: '1rem' }}>
-              <label style={{ marginRight: '0.5rem' }}>Special Test:</label>
-              <button
-                className={`btn ${isSpecial ? "selected" : ""}`}
-                onClick={() => setIsSpecial(!isSpecial)}
-              >
-                {isSpecial ? "Unset Special" : "Set Special"}
-              </button>
-            </div>
-
-            {/* Copy Button & Output */}
-            <div style={{ marginTop: '1rem' }}>
-              <button className="btn" onClick={copyMessageToClipboard}>
-                Copy to Clipboard
-              </button>
-            </div>
-
-            <label className="field-label" style={{ marginTop: '1rem' }}>
-              Generated Message:
-            </label>
-            <textarea
-              readOnly
-              value={buildMessage()}
-            />
-          </div>
+          </section>
         );
       }
 
-      function App() {
-        return <PlaytestScheduler />;
+      function PlaytestScheduler() {
+        const initialStart = roundToNextHalfHour(new Date());
+        const initialEnd = addHours(initialStart, 2);
+
+        const [selectedLetters, setSelectedLetters] = useState(
+          TEAM_OPTIONS.map((team) => team.letter)
+        );
+        const [testType, setTestType] = useState("Open Horizon Update");
+        const [startDateTime, setStartDateTime] = useState(formatDateTimeLocal(initialStart));
+        const [endDateTime, setEndDateTime] = useState(formatDateTimeLocal(initialEnd));
+        const [discordChannel, setDiscordChannel] = useState("");
+        const [patchNotesTitle, setPatchNotesTitle] = useState("");
+        const [patchNotesLink, setPatchNotesLink] = useState("");
+        const [includeBacker, setIncludeBacker] = useState(true);
+        const [includeEndTime, setIncludeEndTime] = useState(true);
+        const [includeTeamsBlock, setIncludeTeamsBlock] = useState(true);
+        const [includeVoiceLine, setIncludeVoiceLine] = useState(true);
+        const [includePatchNotesLine, setIncludePatchNotesLine] = useState(true);
+        const [isPatchDay, setIsPatchDay] = useState(false);
+        const [isSpecial, setIsSpecial] = useState(false);
+        const [useCalculatedDuration, setUseCalculatedDuration] = useState(true);
+        const [customDuration, setCustomDuration] = useState("");
+        const [copyStatus, setCopyStatus] = useState("");
+
+        const browserTimeZone = getBrowserTimeZoneInfo();
+        const startDate = parseDateTimeLocal(startDateTime);
+        const endDate = parseDateTimeLocal(endDateTime);
+        const startUnix = getUnixSeconds(startDate);
+        const endUnix = getUnixSeconds(endDate);
+        const selectedTeams = getOrderedTeams(selectedLetters);
+        const isAllTeams = selectedTeams.length === TEAM_OPTIONS.length;
+        const validRange = Boolean(
+          startDate &&
+          endDate &&
+          endDate.getTime() > startDate.getTime()
+        );
+        const rawDurationHours = validRange
+          ? (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
+          : null;
+
+        const voiceLinkValue = discordChannel.trim() || PLACEHOLDER_VOICE_LINK;
+        const patchLinkValue = patchNotesLink.trim() || PLACEHOLDER_PATCH_LINK;
+        const patchTitleValue = patchNotesTitle.trim() || PLACEHOLDER_PATCH_TITLE;
+        const durationTextForAnnouncement = useCalculatedDuration
+          ? buildAnnouncementDuration(rawDurationHours)
+          : (customDuration.trim() || "TBD duration");
+        const durationTextForBody = useCalculatedDuration
+          ? buildDurationLabel(rawDurationHours, true)
+          : (customDuration.trim() || "TBD");
+
+        const headerDescriptors = [];
+        if (isAllTeams) headerDescriptors.push("All Teams");
+        if (isPatchDay) headerDescriptors.push("Patch Day");
+
+        const headerText = headerDescriptors.length
+          ? `${getIndefiniteArticle(headerDescriptors.join(" "))} ${headerDescriptors.join(" ")} Playtest is Starting Soon`
+          : "A Playtest is Starting Soon";
+
+        const normalizedTestType = testType.trim();
+        const playtestLabel = normalizedTestType
+          ? `${getIndefiniteArticle(normalizedTestType)} ***${normalizedTestType}*** test`
+          : "A playtest";
+
+        const teamMentions = selectedTeams.map(
+          (team) => `@Star ${team.name} [${team.letter}]`
+        );
+        if (includeBacker) {
+          teamMentions.push("@Backer");
+        }
+
+        const teamsLine = teamMentions.length ? teamMentions.join(" ") : "TBD";
+
+        const teamBodyValue = isAllTeams
+          ? "ALL"
+          : (() => {
+              const names = selectedTeams.map((team) => team.name);
+              if (includeBacker) names.push("Backer");
+              return names.length ? names.join(", ") : "TBD";
+            })();
+
+        const startFullToken = startUnix === null
+          ? "[set a start date]"
+          : getDiscordTimestamp(startUnix, "F");
+        const endFullToken = endUnix === null
+          ? "[set an end date]"
+          : getDiscordTimestamp(endUnix, "F");
+
+        const endClause = includeEndTime
+          ? `, and will continue until ${validRange ? endFullToken : "[set an end date after the start]"}`
+          : "";
+
+        const announcementSections = [
+          `## ${headerText}`,
+          `### :SRA: ${playtestLabel} begins on ${startFullToken}${endClause}:SRA:`,
+          includeTeamsBlock ? `__Open to the following Teams__:\n${teamsLine}` : "",
+          "***All are welcome to watch and listen!***",
+          includeVoiceLine
+            ? `Join us in [Voice](${voiceLinkValue}) for a${isSpecial ? " special" : ""} ${durationTextForAnnouncement} test!`
+            : "",
+          includePatchNotesLine
+            ? `Read the patch notes [here](${patchLinkValue})`
+            : "",
+        ].filter(Boolean);
+
+        const announcementText = announcementSections.join("\n\n");
+
+        const eventBodyText = [
+          `Team(s): ${teamBodyValue}`,
+          `Patch Notes: [${patchTitleValue}](${patchLinkValue})`,
+          `Duration: ${durationTextForBody}`,
+        ].join("\n");
+
+        const scheduleError = startDate && endDate && !validRange
+          ? "End time must be after the start time for the duration and announcement range to make sense."
+          : "";
+
+        const resetSchedule = () => {
+          const resetStart = roundToNextHalfHour(new Date());
+          setStartDateTime(formatDateTimeLocal(resetStart));
+          setEndDateTime(formatDateTimeLocal(addHours(resetStart, 2)));
+        };
+
+        const toggleLetter = (letter) => {
+          setSelectedLetters((previous) =>
+            previous.includes(letter)
+              ? previous.filter((item) => item !== letter)
+              : [...previous, letter]
+          );
+        };
+
+        const handleCopy = async (label, value) => {
+          const copied = await copyText(value);
+          setCopyStatus(
+            copied
+              ? `${label} copied to clipboard.`
+              : `${label} could not be copied.`
+          );
+        };
+
+        useEffect(() => {
+          if (!copyStatus) return undefined;
+
+          const timeoutId = window.setTimeout(() => setCopyStatus(""), 2200);
+          return () => window.clearTimeout(timeoutId);
+        }, [copyStatus]);
+
+        return (
+          <main className="page-shell">
+            <section className="hero">
+              <p className="eyebrow">Stars Reach Utility</p>
+              <h1 className="hero-title">Playtest Scheduler</h1>
+              <p className="hero-copy">
+                Build the full announcement, copy any Discord timestamp format, and
+                generate a separate event body from the same local browser schedule.
+              </p>
+
+              <div className="timezone-banner">
+                <strong>{browserTimeZone.timeZone}</strong>
+                <span>
+                  {formatUtcOffset(browserTimeZone.currentOffset)} - {browserTimeZone.isDSTNow
+                    ? "DST is active right now"
+                    : browserTimeZone.observesDST
+                      ? "standard time right now"
+                      : "this timezone does not observe DST"}
+                </span>
+                <span>
+                  Start and end inputs use this browser timezone automatically, including
+                  daylight saving changes on the selected dates.
+                </span>
+              </div>
+            </section>
+
+            {copyStatus ? <div className="toast">{copyStatus}</div> : null}
+
+            <section className="card">
+              <div className="card-header">
+                <div>
+                  <p className="eyebrow">Schedule</p>
+                  <h2 className="card-title">Browser-local date range</h2>
+                  <p className="section-copy">
+                    The schedule now comes from local date pickers instead of manual UTC offset
+                    math. Discord still receives Unix timestamps, so every user sees the right time.
+                  </p>
+                </div>
+                <button type="button" className="ghost-btn" onClick={resetSchedule}>
+                  Reset Window
+                </button>
+              </div>
+
+              <div className="summary-grid">
+                <div className="stat">
+                  <span>Start Preview</span>
+                  <strong>{formatLocalPreview(startDate)}</strong>
+                  <small className="mono">
+                    {startUnix === null ? "No start timestamp yet" : getDiscordTimestamp(startUnix, "F")}
+                  </small>
+                </div>
+                <div className="stat">
+                  <span>End Preview</span>
+                  <strong>{formatLocalPreview(endDate)}</strong>
+                  <small className="mono">
+                    {endUnix === null ? "No end timestamp yet" : getDiscordTimestamp(endUnix, "F")}
+                  </small>
+                </div>
+                <div className="stat">
+                  <span>Duration</span>
+                  <strong>{durationTextForBody}</strong>
+                  <small>
+                    {useCalculatedDuration
+                      ? "Calculated directly from the start and end pickers."
+                      : "Manual override is currently active."}
+                  </small>
+                </div>
+                <div className="stat">
+                  <span>Header Preview</span>
+                  <strong>{headerText}</strong>
+                  <small>{isAllTeams ? "All current teams selected." : "Subset announcement mode."}</small>
+                </div>
+              </div>
+
+              {scheduleError ? <div className="error-banner">{scheduleError}</div> : null}
+            </section>
+
+            <div className="layout two-col">
+              <TimestampPanel
+                title="Start"
+                value={startDateTime}
+                onChange={setStartDateTime}
+                date={startDate}
+                unixSeconds={startUnix}
+                onCopy={handleCopy}
+              />
+              <TimestampPanel
+                title="End"
+                value={endDateTime}
+                onChange={setEndDateTime}
+                date={endDate}
+                unixSeconds={endUnix}
+                onCopy={handleCopy}
+              />
+            </div>
+
+            <div className="layout two-col">
+              <section className="card">
+                <div className="card-header">
+                  <div>
+                    <p className="eyebrow">Template</p>
+                    <h2 className="card-title">Announcement content</h2>
+                    <p className="section-copy">
+                      This matches the current style: full start and end timestamps, bolded update name,
+                      and a separate event-body snippet.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="field-grid">
+                  <div className="field field-span-2">
+                    <label>Test Type</label>
+                    <input
+                      type="text"
+                      value={testType}
+                      onChange={(event) => setTestType(event.target.value)}
+                      placeholder="Open Horizon Update"
+                    />
+                    <span className="helper-text">
+                      Generated lead: <code>{playtestLabel}</code>
+                    </span>
+                  </div>
+
+                  <div className="field field-span-2">
+                    <label>Discord Voice Channel Link</label>
+                    <input
+                      type="url"
+                      value={discordChannel}
+                      onChange={(event) => setDiscordChannel(event.target.value)}
+                      placeholder={PLACEHOLDER_VOICE_LINK}
+                    />
+                  </div>
+
+                  <div className="field">
+                    <label>Patch Notes Title</label>
+                    <input
+                      type="text"
+                      value={patchNotesTitle}
+                      onChange={(event) => setPatchNotesTitle(event.target.value)}
+                      placeholder="That's No Moon"
+                    />
+                  </div>
+
+                  <div className="field">
+                    <label>Patch Notes Link</label>
+                    <input
+                      type="url"
+                      value={patchNotesLink}
+                      onChange={(event) => setPatchNotesLink(event.target.value)}
+                      placeholder="https://starsreach.com/update-link/"
+                    />
+                  </div>
+
+                  <div className="field field-span-2">
+                    <label>Custom Duration</label>
+                    <input
+                      type="text"
+                      value={customDuration}
+                      onChange={(event) => setCustomDuration(event.target.value)}
+                      disabled={useCalculatedDuration}
+                      placeholder="95 hour"
+                    />
+                    <span className="helper-text">
+                      Turn off Auto Duration if you want custom wording instead of the calculated hours.
+                    </span>
+                  </div>
+                </div>
+              </section>
+
+              <section className="card">
+                <div className="card-header">
+                  <div>
+                    <p className="eyebrow">Options</p>
+                    <h2 className="card-title">On/off knobs</h2>
+                    <p className="section-copy">
+                      These switches control the new template sections without changing the underlying dates.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="toggle-row">
+                  <button
+                    type="button"
+                    className={`toggle-chip ${includeEndTime ? "active" : ""}`}
+                    onClick={() => setIncludeEndTime((value) => !value)}
+                  >
+                    Include End Time
+                  </button>
+                  <button
+                    type="button"
+                    className={`toggle-chip ${includeTeamsBlock ? "active" : ""}`}
+                    onClick={() => setIncludeTeamsBlock((value) => !value)}
+                  >
+                    Include Teams Block
+                  </button>
+                  <button
+                    type="button"
+                    className={`toggle-chip ${includeVoiceLine ? "active" : ""}`}
+                    onClick={() => setIncludeVoiceLine((value) => !value)}
+                  >
+                    Include Voice Line
+                  </button>
+                  <button
+                    type="button"
+                    className={`toggle-chip ${includePatchNotesLine ? "active" : ""}`}
+                    onClick={() => setIncludePatchNotesLine((value) => !value)}
+                  >
+                    Include Patch Notes Line
+                  </button>
+                  <button
+                    type="button"
+                    className={`toggle-chip ${isPatchDay ? "active" : ""}`}
+                    onClick={() => setIsPatchDay((value) => !value)}
+                  >
+                    Patch Day Header
+                  </button>
+                  <button
+                    type="button"
+                    className={`toggle-chip ${isSpecial ? "active" : ""}`}
+                    onClick={() => setIsSpecial((value) => !value)}
+                  >
+                    Special Test
+                  </button>
+                  <button
+                    type="button"
+                    className={`toggle-chip ${useCalculatedDuration ? "active" : ""}`}
+                    onClick={() => setUseCalculatedDuration((value) => !value)}
+                  >
+                    Auto Duration
+                  </button>
+                </div>
+
+                <div className="summary-grid" style={{ marginTop: "1rem" }}>
+                  <div className="stat">
+                    <span>Main Timestamp Style</span>
+                    <strong className="mono">
+                      {startUnix === null ? "Unavailable" : getDiscordTimestamp(startUnix, "F")}
+                    </strong>
+                    <small>The announcement now defaults to the long Discord datetime token.</small>
+                  </div>
+                  <div className="stat">
+                    <span>Range Sentence</span>
+                    <strong>{includeEndTime ? "Start + End" : "Start Only"}</strong>
+                    <small>
+                      {includeEndTime
+                        ? "Uses \"will continue until\" with the end timestamp."
+                        : "Only the opening start time appears in the lead sentence."}
+                    </small>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <section className="card">
+              <div className="card-header">
+                <div>
+                  <p className="eyebrow">Teams</p>
+                  <h2 className="card-title">Current mention roster</h2>
+                  <p className="section-copy">
+                    Selecting every current team automatically switches the header and event body to the
+                    All Teams wording from your example.
+                  </p>
+                </div>
+
+                <div className="button-row">
+                  <button
+                    type="button"
+                    className="ghost-btn"
+                    onClick={() => setSelectedLetters(TEAM_OPTIONS.map((team) => team.letter))}
+                  >
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    className="ghost-btn"
+                    onClick={() => setSelectedLetters([])}
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    className={`toggle-chip ${includeBacker ? "active" : ""}`}
+                    onClick={() => setIncludeBacker((value) => !value)}
+                  >
+                    Include @Backer
+                  </button>
+                </div>
+              </div>
+
+              <div className="status-row" style={{ marginBottom: "1rem" }}>
+                <span className="status-pill">{selectedTeams.length} team mention(s) selected</span>
+                <span className="status-pill">
+                  {isAllTeams ? "Header: All Teams" : "Header: Standard"}
+                </span>
+                <span className="status-pill">
+                  Event Body Team(s): {teamBodyValue}
+                </span>
+              </div>
+
+              <div className="team-grid">
+                {TEAM_OPTIONS.map((team) => {
+                  const isSelected = selectedLetters.includes(team.letter);
+
+                  return (
+                    <button
+                      key={team.letter}
+                      type="button"
+                      className={`team-chip ${isSelected ? "selected" : ""}`}
+                      onClick={() => toggleLetter(team.letter)}
+                    >
+                      {team.name} [{team.letter}]
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <div className="layout two-col">
+              <section className="card">
+                <div className="card-header">
+                  <div>
+                    <p className="eyebrow">Output</p>
+                    <h2 className="card-title">Playtest announcement</h2>
+                    <p className="section-copy">
+                      This is the full Discord-ready announcement in the updated style.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="primary-btn"
+                    onClick={() => handleCopy("Announcement", announcementText)}
+                  >
+                    Copy Announcement
+                  </button>
+                </div>
+
+                <textarea readOnly value={announcementText}></textarea>
+              </section>
+
+              <section className="card">
+                <div className="card-header">
+                  <div>
+                    <p className="eyebrow">Event Body</p>
+                    <h2 className="card-title">Separate event text</h2>
+                    <p className="section-copy">
+                      This uses the same dates and patch-note data, with duration calculated from the date range.
+                    </p>
+                  </div>
+                  <div className="button-row">
+                    <button
+                      type="button"
+                      className="primary-btn"
+                      onClick={() => handleCopy("Event body", eventBodyText)}
+                    >
+                      Copy Event Body
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost-btn"
+                      onClick={() => handleCopy("Announcement and event body", `${announcementText}\n\n${eventBodyText}`)}
+                    >
+                      Copy Both
+                    </button>
+                  </div>
+                </div>
+
+                <textarea className="compact-output" readOnly value={eventBodyText}></textarea>
+              </section>
+            </div>
+          </main>
+        );
       }
 
-      ReactDOM.render(<App />, document.getElementById("root"));
+      ReactDOM.render(<PlaytestScheduler />, document.getElementById("root"));
     </script>
   </body>
 </html>
