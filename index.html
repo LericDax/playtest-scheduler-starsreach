@@ -528,8 +528,26 @@
 
       function getIndefiniteArticle(text) {
         if (!text || !text.trim()) return "A";
-        const firstLetter = text.trim().charAt(0).toLowerCase();
-        return "aeiou".includes(firstLetter) ? "An" : "A";
+
+        const match = text.trim().match(/[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*/);
+        if (!match) return "A";
+
+        const firstWord = match[0];
+        const lowerWord = firstWord.toLowerCase();
+
+        if (/^(honest|honor|hour|heir|herb)\b/.test(lowerWord)) {
+          return "An";
+        }
+
+        if (/^(one|once|ewe|euro|user|ubiq|uni([^a-z]|[b-df-hj-np-tv-z]))/.test(lowerWord)) {
+          return "A";
+        }
+
+        if (/^[FHLMNRSX]$/.test(firstWord) || /^[FHLMNRSX][A-Z0-9-]+$/.test(firstWord)) {
+          return "An";
+        }
+
+        return "aeiou".includes(lowerWord.charAt(0)) ? "An" : "A";
       }
 
       function roundToNextHalfHour(date) {
