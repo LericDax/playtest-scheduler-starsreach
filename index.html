@@ -904,14 +904,15 @@
           ? `, and will continue until ${validRange ? endFullToken : "[set an end date after the start]"}`
           : "";
 
+        const audienceBlock = includeVoiceLine
+          ? `***All are welcome to watch and listen!***\nJoin us in [Voice](${voiceLinkValue}) for a${isSpecial ? " special" : ""} ${durationTextForAnnouncement} test!`
+          : "***All are welcome to watch and listen!***";
+
         const announcementSections = [
           `## ${headerText}`,
           `### :SRA: ${playtestLabel} begins on ${startFullToken}${endClause}:SRA:`,
           includeTeamsBlock ? `__Open to the following Teams__:\n${teamsLine}` : "",
-          "***All are welcome to watch and listen!***",
-          includeVoiceLine
-            ? `Join us in [Voice](${voiceLinkValue}) for a${isSpecial ? " special" : ""} ${durationTextForAnnouncement} test!`
-            : "",
+          audienceBlock,
           includePatchNotesLine
             ? `Read the patch notes [here](${patchLinkValue})`
             : "",
