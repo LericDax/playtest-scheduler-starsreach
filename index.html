@@ -139,14 +139,25 @@
         box-shadow: var(--shadow);
       }
 
+      .timezone-banner-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
       .timezone-banner strong {
+        display: block;
         font-size: 1rem;
       }
 
       .timesource-toggle {
         display: flex;
         align-items: center;
+        justify-content: flex-end;
         gap: 0.7rem;
+        margin-left: auto;
         color: var(--text);
         font-weight: 600;
       }
@@ -539,6 +550,16 @@
         .timestamp-row,
         .stat {
           border-radius: 20px;
+        }
+
+        .timezone-banner-header {
+          align-items: flex-start;
+        }
+
+        .timesource-toggle {
+          width: 100%;
+          justify-content: flex-start;
+          margin-left: 0;
         }
 
         .button-row,
@@ -1290,15 +1311,17 @@
               </p>
 
               <div className="timezone-banner">
-                <label className="timesource-toggle">
-                  <input
-                    type="checkbox"
-                    checked={usePacificTimeOverride}
-                    onChange={(event) => setUsePacificTimeOverride(event.target.checked)}
-                  />
-                  <span>Override Timesource as Pacific Time</span>
-                </label>
-                <strong>{activeSourceName}</strong>
+                <div className="timezone-banner-header">
+                  <strong>{activeSourceName}</strong>
+                  <label className="timesource-toggle">
+                    <input
+                      type="checkbox"
+                      checked={usePacificTimeOverride}
+                      onChange={(event) => setUsePacificTimeOverride(event.target.checked)}
+                    />
+                    <span>Override Timesource as Pacific Time</span>
+                  </label>
+                </div>
                 <span>Browser timezone: {browserTimeZone.timeZone}</span>
                 <span>
                   {formatUtcOffset(activeTimeZoneInfo.currentOffset)} - {activeTimeZoneInfo.isDSTNow
