@@ -652,26 +652,6 @@
         return "aeiou".includes(lowerWord.charAt(0)) ? "An" : "A";
       }
 
-      function roundToNextHalfHour(date) {
-        const rounded = new Date(date);
-        rounded.setSeconds(0, 0);
-        const minutes = rounded.getMinutes();
-
-        if (minutes === 0 || minutes === 30) {
-          rounded.setMinutes(minutes + 30);
-          return rounded;
-        }
-
-        rounded.setMinutes(minutes < 30 ? 30 : 60);
-        return rounded;
-      }
-
-      function addHours(date, hours) {
-        const copy = new Date(date);
-        copy.setTime(copy.getTime() + hours * 60 * 60 * 1000);
-        return copy;
-      }
-
       function formatDateTimeLocal(date) {
         const pad = (value) => String(value).padStart(2, "0");
         return [
@@ -693,6 +673,18 @@
         if (values.some((item) => Number.isNaN(item))) return null;
 
         return { year, month, day, hour, minute };
+      }
+
+      function getDatePartsFromDate(date) {
+        if (!date) return null;
+
+        return {
+          year: date.getFullYear(),
+          month: date.getMonth() + 1,
+          day: date.getDate(),
+          hour: date.getHours(),
+          minute: date.getMinutes(),
+        };
       }
 
       function createLocalDateFromParts(parts) {
@@ -913,14 +905,38 @@
         }
       }
 
+      function formatDateTimeForTimeSource(date, timeZone) {
+        if (!date) return "";
+        return formatDateTimeLocal(timeZone ? getWallClockDateInTimeZone(date, timeZone) : date);
+      }
+
       function getDefaultScheduleWindow(timeZone) {
-        const wallClockNow = timeZone ? getWallClockDateInTimeZone(new Date(), timeZone) : new Date();
-        const start = roundToNextHalfHour(wallClockNow);
-        const end = addHours(start, 2);
+        const pacificNow = getWallClockDateInTimeZone(new Date(), PACIFIC_TIME_ZONE);
+        const startPacificWallClock = new Date(
+          pacificNow.getFullYear(),
+          pacificNow.getMonth(),
+          pacificNow.getDate(),
+          9,
+          0,
+          0,
+          0
+        );
+        const daysUntilTuesday = ((2 - startPacificWallClock.getDay() + 7) % 7) || 7;
+        const endPacificWallClock = new Date(
+          startPacificWallClock.getFullYear(),
+          startPacificWallClock.getMonth(),
+          startPacificWallClock.getDate() + daysUntilTuesday,
+          8,
+          0,
+          0,
+          0
+        );
+        const start = createDateInTimeZone(getDatePartsFromDate(startPacificWallClock), PACIFIC_TIME_ZONE);
+        const end = createDateInTimeZone(getDatePartsFromDate(endPacificWallClock), PACIFIC_TIME_ZONE);
 
         return {
-          start: formatDateTimeLocal(start),
-          end: formatDateTimeLocal(end),
+          start: formatDateTimeForTimeSource(start, timeZone),
+          end: formatDateTimeForTimeSource(end, timeZone),
         };
       }
 
