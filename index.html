@@ -445,7 +445,7 @@
         { style: "R", label: "Relative Time" },
       ];
 
-      const PLACEHOLDER_VOICE_LINK = "https://discord.com/channels/...";
+      const DEFAULT_VOICE_LINK = "https://discord.com/channels/882005173394890802/1328814503705448500";
       const PLACEHOLDER_PATCH_LINK = "PATCH_NOTES_URL";
       const PLACEHOLDER_PATCH_TITLE = "Patch Notes";
 
@@ -675,10 +675,11 @@
         const [selectedLetters, setSelectedLetters] = useState(
           TEAM_OPTIONS.map((team) => team.letter)
         );
-        const [testType, setTestType] = useState("Open Horizon Update");
+        const [patchName, setPatchName] = useState("Open Horizon Update");
+        const [testType, setTestType] = useState("");
         const [startDateTime, setStartDateTime] = useState(formatDateTimeLocal(initialStart));
         const [endDateTime, setEndDateTime] = useState(formatDateTimeLocal(initialEnd));
-        const [discordChannel, setDiscordChannel] = useState("");
+        const [discordChannel, setDiscordChannel] = useState(DEFAULT_VOICE_LINK);
         const [patchNotesTitle, setPatchNotesTitle] = useState("");
         const [patchNotesLink, setPatchNotesLink] = useState("");
         const [includeBacker, setIncludeBacker] = useState(true);
@@ -708,9 +709,10 @@
           ? (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
           : null;
 
-        const voiceLinkValue = discordChannel.trim() || PLACEHOLDER_VOICE_LINK;
+        const patchNameValue = patchName.trim();
+        const voiceLinkValue = discordChannel.trim() || DEFAULT_VOICE_LINK;
         const patchLinkValue = patchNotesLink.trim() || PLACEHOLDER_PATCH_LINK;
-        const patchTitleValue = patchNotesTitle.trim() || PLACEHOLDER_PATCH_TITLE;
+        const patchTitleValue = patchNotesTitle.trim() || patchNameValue || PLACEHOLDER_PATCH_TITLE;
         const durationTextForAnnouncement = useCalculatedDuration
           ? buildAnnouncementDuration(rawDurationHours)
           : (customDuration.trim() || "TBD duration");
@@ -726,7 +728,7 @@
           ? `${getIndefiniteArticle(headerDescriptors.join(" "))} ${headerDescriptors.join(" ")} Playtest is Starting Soon`
           : "A Playtest is Starting Soon";
 
-        const normalizedTestType = testType.trim();
+        const normalizedTestType = testType.trim() || patchNameValue;
         const playtestLabel = normalizedTestType
           ? `${getIndefiniteArticle(normalizedTestType)} ***${normalizedTestType}*** test`
           : "A playtest";
@@ -917,23 +919,36 @@
                     <p className="eyebrow">Template</p>
                     <h2 className="card-title">Announcement content</h2>
                     <p className="section-copy">
-                      This matches the current style: full start and end timestamps, bolded update name,
-                      and a separate event-body snippet.
+                      Patch Name is now the source field. The announcement label and patch-notes title
+                      can inherit from it automatically, with overrides only when you need different wording.
                     </p>
                   </div>
                 </div>
 
                 <div className="field-grid">
                   <div className="field field-span-2">
-                    <label>Test Type</label>
+                    <label>Patch Name</label>
+                    <input
+                      type="text"
+                      value={patchName}
+                      onChange={(event) => setPatchName(event.target.value)}
+                      placeholder="Open Horizon Update"
+                    />
+                    <span className="helper-text">
+                      Used as the default source for the announcement update name and the event-body patch-notes title.
+                    </span>
+                  </div>
+
+                  <div className="field field-span-2">
+                    <label>Announcement Label Override</label>
                     <input
                       type="text"
                       value={testType}
                       onChange={(event) => setTestType(event.target.value)}
-                      placeholder="Open Horizon Update"
+                      placeholder="Leave blank to use Patch Name"
                     />
                     <span className="helper-text">
-                      Generated lead: <code>{playtestLabel}</code>
+                      Current lead: <code>{playtestLabel}</code>
                     </span>
                   </div>
 
@@ -943,18 +958,21 @@
                       type="url"
                       value={discordChannel}
                       onChange={(event) => setDiscordChannel(event.target.value)}
-                      placeholder={PLACEHOLDER_VOICE_LINK}
+                      placeholder={DEFAULT_VOICE_LINK}
                     />
                   </div>
 
                   <div className="field">
-                    <label>Patch Notes Title</label>
+                    <label>Patch Notes Title Override</label>
                     <input
                       type="text"
                       value={patchNotesTitle}
                       onChange={(event) => setPatchNotesTitle(event.target.value)}
-                      placeholder="That's No Moon"
+                      placeholder="Leave blank to use Patch Name"
                     />
+                    <span className="helper-text">
+                      Current event-body title: <code>{patchTitleValue}</code>
+                    </span>
                   </div>
 
                   <div className="field">
