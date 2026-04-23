@@ -1167,11 +1167,11 @@
         const activeSourceName = usePacificTimeOverride
           ? "Pacific Time (America/Los_Angeles)"
           : browserTimeZone.timeZone;
-        const previewLabel = usePacificTimeOverride ? "Pacific Preview" : "Local Preview";
-        const scheduleTitle = usePacificTimeOverride ? "Pacific office date range" : "Browser-local date range";
+        const previewLabel = usePacificTimeOverride ? "Pacific Time" : "Your Time";
+        const scheduleTitle = usePacificTimeOverride ? "Pacific schedule window" : "Schedule window";
         const scheduleCopy = usePacificTimeOverride
-          ? "The schedule is currently interpreted in Pacific Time for the Playable Worlds office. Discord still receives Unix timestamps, so every user sees the right time."
-          : "The schedule now comes from local date pickers instead of manual UTC offset math. Discord still receives Unix timestamps, so every user sees the right time.";
+          ? "These times are set in Pacific Time for the Playable Worlds office. Discord still converts them correctly for everyone."
+          : "Set the playtest in your own timezone here. Discord still converts it correctly for everyone.";
         const startDate = parseDateTimeValue(startDateTime, activeSourceTimeZone);
         const endDate = parseDateTimeValue(endDateTime, activeSourceTimeZone);
         const startUnix = getUnixSeconds(startDate);
@@ -1331,7 +1331,7 @@
                       : "this timezone does not observe DST"}
                 </span>
                 <span>
-                  Start and end inputs are currently interpreted in {usePacificTimeOverride
+                  Start and end times are using {usePacificTimeOverride
                     ? "Pacific Time for Playable Worlds"
                     : "your browser timezone"}, including daylight saving changes on the selected dates.
                 </span>
@@ -1372,14 +1372,14 @@
                   <strong>{durationTextForBody}</strong>
                   <small>
                     {useCalculatedDuration
-                      ? "Calculated directly from the start and end pickers."
-                      : "Manual override is currently active."}
+                      ? "Calculated from the start and end times."
+                      : "Using your custom duration text."}
                   </small>
                 </div>
                 <div className="stat">
                   <span>Header Preview</span>
                   <strong>{headerText}</strong>
-                  <small>{isAllTeams ? "All current teams selected." : "Subset announcement mode."}</small>
+                  <small>{isAllTeams ? "All teams are included." : "Only selected teams will appear."}</small>
                 </div>
               </div>
 
@@ -1416,11 +1416,11 @@
                 <div className="card-header">
                   <div>
                     <p className="eyebrow">Template</p>
-                    <h2 className="card-title">Announcement content</h2>
-                    <p className="section-copy">
-                      Patch Name is now the source field. The announcement label and patch-notes title
-                      can inherit from it automatically, with overrides only when you need different wording.
-                    </p>
+                  <h2 className="card-title">Announcement content</h2>
+                  <p className="section-copy">
+                      Enter the patch name once here and the announcement title and patch notes title will
+                      fill in automatically. You can still change either one below.
+                  </p>
                   </div>
                 </div>
 
@@ -1434,7 +1434,7 @@
                       placeholder="Open Horizon Update"
                     />
                     <span className="helper-text">
-                      Used as the default source for the announcement update name and the event-body patch-notes title.
+                      This fills the announcement title and patch notes title unless you override them below.
                     </span>
                   </div>
 
@@ -1447,7 +1447,7 @@
                       placeholder="Leave blank to use Patch Name"
                     />
                     <span className="helper-text">
-                      Current lead: <code>{playtestLabel}</code>
+                      Announcement title preview: <code>{playtestLabel}</code>
                     </span>
                   </div>
 
@@ -1470,7 +1470,7 @@
                       placeholder="Leave blank to use Patch Name"
                     />
                     <span className="helper-text">
-                      Current event-body title: <code>{patchTitleValue}</code>
+                      Patch notes title preview: <code>{patchTitleValue}</code>
                     </span>
                   </div>
 
@@ -1494,7 +1494,7 @@
                       placeholder="95 hour"
                     />
                     <span className="helper-text">
-                      Turn off Auto Duration if you want custom wording instead of the calculated hours.
+                      Turn off Auto Duration if you want to type your own duration text.
                     </span>
                   </div>
                 </div>
@@ -1504,9 +1504,9 @@
                 <div className="card-header">
                   <div>
                     <p className="eyebrow">Options</p>
-                    <h2 className="card-title">On/off knobs</h2>
+                    <h2 className="card-title">Options</h2>
                     <p className="section-copy">
-                      These switches control the new template sections without changing the underlying dates.
+                      Use these switches to show or hide parts of the message.
                     </p>
                   </div>
                 </div>
@@ -1565,19 +1565,19 @@
 
                 <div className="summary-grid" style={{ marginTop: "1rem" }}>
                   <div className="stat">
-                    <span>Main Timestamp Style</span>
+                    <span>Main Timestamp</span>
                     <strong className="mono">
                       {startUnix === null ? "Unavailable" : getDiscordTimestamp(startUnix, "F")}
                     </strong>
-                    <small>The announcement now defaults to the long Discord datetime token.</small>
+                    <small>The announcement uses Discord's full date and time format.</small>
                   </div>
                   <div className="stat">
-                    <span>Range Sentence</span>
+                    <span>Lead Line</span>
                     <strong>{includeEndTime ? "Start + End" : "Start Only"}</strong>
                     <small>
                       {includeEndTime
-                        ? "Uses \"will continue until\" with the end timestamp."
-                        : "Only the opening start time appears in the lead sentence."}
+                        ? "Shows both the start time and the ending time."
+                        : "Shows only the start time."}
                     </small>
                   </div>
                 </div>
@@ -1585,15 +1585,15 @@
             </div>
 
             <section className="card">
-              <div className="card-header">
-                <div>
-                  <p className="eyebrow">Teams</p>
-                  <h2 className="card-title">Current mention roster</h2>
-                  <p className="section-copy">
-                    Selecting every current team automatically switches the header and event body to the
-                    All Teams wording from your example.
-                  </p>
-                </div>
+                <div className="card-header">
+                  <div>
+                    <p className="eyebrow">Teams</p>
+                    <h2 className="card-title">Team mentions</h2>
+                    <p className="section-copy">
+                      Pick which team tags to include. Selecting every team automatically switches the
+                      wording to All Teams.
+                    </p>
+                  </div>
 
                 <div className="button-row">
                   <button
@@ -1621,12 +1621,12 @@
               </div>
 
               <div className="status-row" style={{ marginBottom: "1rem" }}>
-                <span className="status-pill">{selectedTeams.length} team mention(s) selected</span>
+                <span className="status-pill">{selectedTeams.length} team mentions</span>
                 <span className="status-pill">
                   {isAllTeams ? "Header: All Teams" : "Header: Standard"}
                 </span>
                 <span className="status-pill">
-                  Event Body Team(s): {teamBodyValue}
+                  Event body: {teamBodyValue}
                 </span>
               </div>
 
@@ -1653,10 +1653,10 @@
                 <div className="card-header">
                   <div>
                     <p className="eyebrow">Output</p>
-                    <h2 className="card-title">Playtest announcement</h2>
-                    <p className="section-copy">
-                      This is the full Discord-ready announcement in the updated style.
-                    </p>
+                  <h2 className="card-title">Playtest announcement</h2>
+                  <p className="section-copy">
+                      Ready to paste into Discord.
+                  </p>
                   </div>
                   <button
                     type="button"
@@ -1674,10 +1674,10 @@
                 <div className="card-header">
                   <div>
                     <p className="eyebrow">Event Body</p>
-                    <h2 className="card-title">Separate event text</h2>
-                    <p className="section-copy">
-                      This uses the same dates and patch-note data, with duration calculated from the date range.
-                    </p>
+                  <h2 className="card-title">Separate event text</h2>
+                  <p className="section-copy">
+                      A shorter version with the teams, patch notes, and duration.
+                  </p>
                   </div>
                   <div className="button-row">
                     <button
